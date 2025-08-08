@@ -1,0 +1,56 @@
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2 class="mb-0">Proyectos</h2>
+  <button *ngIf="userRole === 'ADMIN' || userRole === 'GERENCIA'" class="btn btn-primary" (click)="showCreateProjectModal = true">
+    Crear Nuevo Proyecto
+  </button>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <div *ngIf="projects$ | async as projects; else loading" class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Estado</th>
+            <th>Fecha de Fin</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let project of projects">
+            <td>{{ project.name }}</td>
+            <td>
+              <span class="badge" [ngClass]="{
+                    'bg-success': project.status === 'COMPLETADO',
+                    'bg-warning text-dark': project.status === 'EN_PROGRESO',
+                    'bg-secondary': project.status === 'PLANIFICADO',
+                    'bg-danger': project.status === 'EN_RIESGO'
+                  }">
+                {{ project.status }}
+              </span>
+            </td>
+            <td>{{ project.endDate | date:'dd/MM/yyyy' }}</td>
+            <td>
+              <a [routerLink]="['/projects', project.id]" class="btn btn-primary btn-sm me-2">Ver Detalles</a>
+              <button *ngIf="userRole === 'ADMIN' || userRole === 'GERENCIA'" 
+                      (click)="deleteProject(project.id, project.name)" 
+                      class="btn btn-danger btn-sm">
+                Eliminar
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <ng-template #loading>
+      <p class="text-center">Cargando proyectos...</p>
+    </ng-template>
+  </div>
+</div>
+
+<app-create-project-modal 
+  *ngIf="showCreateProjectModal" 
+  (close)="showCreateProjectModal = false"
+  (projectCreated)="loadProjects()">
+</app-create-project-modal>

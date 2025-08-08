@@ -1,0 +1,168 @@
+<div *ngIf="!isLoading; else loadingTemplate">
+  <div *ngIf="project">
+    <a routerLink="/projects" class="btn btn-link mb-3 ps-0">&larr; Volver a la lista de proyectos</a>
+    
+    <div class="card mb-4">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <h2 class="card-title">{{ project.name }}</h2>
+            <p class="card-text text-muted">{{ project.description }}</p>
+          </div>
+          <button *ngIf="userRole === 'ADMIN' || userRole === 'GERENCIA'" 
+                  class="btn btn-outline-secondary btn-sm" 
+                  (click)="enableProjectEditMode()">
+            Editar Estado
+          </button>
+        </div>
+        <hr>
+        <div *ngIf="!isProjectEditMode">
+          <div class="d-flex justify-content-between flex-wrap">
+            <span><strong>Inicio:</strong> {{ project.startDate | date:'fullDate' }}</span>
+            <span><strong>Fin:</strong> {{ project.endDate | date:'fullDate' }}</span>
+            <span><strong>Estado:</strong> 
+              <span class="badge" [ngClass]="{
+                    'bg-success': project.status === 'COMPLETADO',
+                    'bg-warning text-dark': project.status === 'EN_PROGRESO',
+                    'bg-secondary': project.status === 'PLANIFICADO',
+                    'bg-danger': project.status === 'EN_RIESGO'
+                  }">
+                {{ project.status }}
+              </span>
+            </span>
+          </div>
+        </div>
+        <form *ngIf="isProjectEditMode" [formGroup]="editProjectForm" (ngSubmit)="updateProjectStatus()">
+          <div class="row align-items-end">
+            <div class="col-md-4">
+              <label for="projectStatus" class="form-label">Cambiar Estado del Proyecto</label>
+              <select id="projectStatus" formControlName="status" class="form-select">
+                <option value="PLANIFICADO">Planificado</option>
+                <option value="EN_PROGRESO">En Progreso</option>
+                <option value="COMPLETADO">Completado</option>
+                <option value="EN_RIESGO">En Riesgo</option>
+              </select>
+            </div>
+            <div class="col-md-8">
+              <button type="button" class="btn btn-secondary me-2" (click)="isProjectEditMode = false">Cancelar</button>
+              <button type="submit" class="btn btn-primary">Guardar Estado</button>
+            </div>
+          </div>
+        </form>
+        
+        <div *ngIf="project.participants && project.participants.length > 0" class="mt-4">
+          <h5 class="card-subtitle mb-2 text-muted">Participantes</h5>
+          <div class="d-flex flex-wrap">
+            <span *ngFor="let user of project.participants" class="badge bg-info text-dark me-2 mb-2">
+              {{ user.username }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title mb-0">Cronograma de Tareas (Gantt)</h3>
+        <button *ngIf="userRole === 'ADMIN' || userRole === 'GERENCIA'" class="btn btn-sm btn-primary" (click)="showCreateTaskModal = true">
+          + Nueva Tarea
+        </button>
+      </div>
+      <div class="card-body">
+          <div #gantt></div>
+          <div *ngIf="ganttTasks.length === 0 && !isLoading" class="alert alert-info text-center mt-3">
+            No hay tareas para mostrar en este proyecto.
+          </div>
+      </div>
+    </div>
+    
+    <div *ngIf="selectedTask" class="popup-overlay" (click)="closePopup()">
+      <div class="popup-content card" (click)="$event.stopPropagation()">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">{{ isEditMode ? 'Editar Tarea' : 'Detalle de la Tarea' }}</h5>
+          <button *ngIf="!isEditMode && (userRole === 'ADMIN' || userRole === 'GERENCIA') && selectedTask.status !== 'COMPLETADA'" 
+                  type="button" class="btn btn-sm btn-outline-primary me-auto ms-3" (click)="isEditMode = true">Editar</button>
+          <button type="button" class="btn-close" aria-label="Close" (click)="closePopup()"></button>
+        </div>
+        
+        <div *ngIf="!isEditMode" class="card-body">
+          <h6 class="card-title">{{ selectedTask.name }}</h6>
+          <p class="card-text text-muted">{{ selectedTask.description }}</p>
+          <hr>
+          <div class="row">
+            <div class="col-6">
+              <p class="mb-1"><small class="text-muted">Asignado a:</small></p>
+              <h6>{{ selectedTask.assignedTo }}</h6>
+            </div>
+            <div class="col-6">
+              <p class="mb-1"><small class="text-muted">Creado por:</small></p>
+              <h6>{{ selectedTask.createdBy }}</h6>
+            </div>
+          </div>
+          <div class="row mt-3">
+            <div class="col-6">
+              <p class="mb-1"><small class="text-muted">Estado:</small></p>
+              <span class="badge" [ngClass]="{
+                'bg-success': selectedTask.status === 'COMPLETADA',
+                'bg-warning text-dark': selectedTask.status === 'EN_PROGRESO',
+                'bg-secondary': selectedTask.status === 'PENDIENTE'
+              }">{{ selectedTask.status }}</span>
+            </div>
+            <div class="col-6">
+              <p class="mb-1"><small class="text-muted">Prioridad:</small></p>
+              <span class="badge" [ngClass]="{
+                'bg-danger': selectedTask.priority === 'ALTA',
+                'bg-info text-dark': selectedTask.priority === 'MEDIA',
+                'bg-light text-dark': selectedTask.priority === 'BAJA'
+              }">{{ selectedTask.priority }}</span>
+            </div>
+          </div>
+          <p class="mt-3 mb-1"><small class="text-muted">Progreso:</small></p>
+          <div class="progress">
+            <div class="progress-bar" role="progressbar" [style.width.%]="selectedTask.progress" [attr.aria-valuenow]="selectedTask.progress" aria-valuemin="0" aria-valuemax="100">
+              {{ selectedTask.progress }}%
+            </div>
+          </div>
+        </div>
+
+        <form *ngIf="isEditMode" [formGroup]="editTaskForm" (ngSubmit)="updateTaskDetails()">
+          <div class="card-body">
+            <div class="mb-3">
+              <label class="form-label">Título</label>
+              <input type="text" formControlName="title" class="form-control">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Descripción</label>
+              <textarea formControlName="description" class="form-control" rows="3"></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Progreso: {{ editTaskForm.value.progress }}%</label>
+              <input type="range" formControlName="progress" class="form-range">
+            </div>
+          </div>
+          <div class="card-footer d-flex justify-content-between align-items-center">
+            <button type="button" class="btn btn-danger" (click)="deleteTask()">Eliminar Tarea</button>
+            <div>
+              <button type="button" class="btn btn-secondary me-2" (click)="isEditMode = false">Cancelar</button>
+              <button type="submit" class="btn btn-primary" [disabled]="editTaskForm.invalid">Guardar Cambios</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<ng-template #loadingTemplate>
+  <p class="text-center">Cargando detalles del proyecto...</p>
+</ng-template>
+
+<app-create-task-modal
+  *ngIf="showCreateTaskModal && project"
+  [projectId]="project.id"
+  [projectStartDate]="project.startDate"
+  [projectEndDate]="project.endDate"
+  [existingTasks]="allProjectTasks" 
+  (close)="showCreateTaskModal = false"
+  (taskCreated)="loadProjectAndTasks(project.id)">
+</app-create-task-modal>

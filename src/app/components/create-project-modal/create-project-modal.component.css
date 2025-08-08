@@ -1,0 +1,40 @@
+.modal-title {
+  color: #007bff;
+  margin-bottom: 1rem;
+}
+
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+
+.form-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #343a40;
+  font-weight: bold;
+}
+
+
+.btn-close {
+  float: right;
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-size: 1.5rem;
+  font-weight: bold;
+  opacity: 0.5;
+}
+
+
+.btn-close:hover {
+  opacity: 0.75;
+}
+
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
